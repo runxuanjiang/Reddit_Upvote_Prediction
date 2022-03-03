@@ -6,8 +6,14 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 
+def concatenate(df):
+	df["Text"].fillna(" ",inplace = True)
+	df["Text"] = df["Text"].astype(str) + " "+ df["Title"].astype(str)
+	return df
+
 # 2.1 (3 pts.) 
 def lowerCase(df):
+	df = concatenate(df)
 	df["Text"] = df["Text"].str.lower()
 	return df
 

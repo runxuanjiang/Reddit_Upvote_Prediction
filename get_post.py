@@ -15,7 +15,7 @@ reddit = praw.Reddit(
     user_agent=USER_AGENT,
 )
 post_dict = {"Title":[],"Text":[],"Upvotes":[],"Downvotes":[],"Subreddit":[],"Source":[]}
-post_num = 5000
+post_num = 2000
 
 def cal_votes(post):
     if post.upvote_ratio == 0 or post.upvote_ratio == 0.5:
