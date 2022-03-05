@@ -1,6 +1,6 @@
 # text files - please use zip files for storing (large) text files
-*.txt
-
+word_embeddings/*.txt
+word_embeddings/*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
