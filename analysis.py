@@ -1,100 +1,27 @@
-import sklearn
-from sklearn import model_selection
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.linear_model import PoissonRegressor, GammaRegressor
-from sklearn.ensemble import RandomForestRegressor
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import figure
 
-def crossValidate(X, y, trainfunc, evalfunc, accfunc, folds=10):
-    iteration = 0
-    accuracies = []
-    kf = model_selection.KFold(n_splits = folds, shuffle=True)
-    for train_index, test_index in kf.split(X):
-        iteration += 1
-        print("Cross Validation Iteration:", iteration)
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
+def cleanDataConcatenate(df):
+    df['Text'] = df['Text'].map(lambda text : "" if text in ['[removed]', '[deleted]', '[deleted by user]', np.nan] else text)
+    df = df[~df['Title'].isin(['[removed]', '[deleted]', '[deleted by user]', np.nan])].reset_index(drop=True)
+    df['Text'] = df['Title'] + ' ' + df['Text']
+    df['Text'] = df['Text'].map(lambda text : text.lower())
+    return df
 
-        model = trainfunc(X_train, y_train)
-        y_pred = evalfunc(model, X_test)
-        accuracies.append(accfunc(y_pred, y_test))
+def upvoteHist(df):
+    subreddit = df['Subreddit'][0]
+    figure(figsize=(20, 10))
+    plt.hist(df['Upvotes'], bins=np.logspace(np.log10(1.0), np.log10(100000.0), 50), log=True, edgecolor='black', color='green')
+    plt.gca().set_xscale("log")
+    plt.title(f"Distribution of upvotes for {subreddit}")
+    plt.show()
 
-    return np.mean(accuracies)
-
-def mse(y_pred, y_test):
-    return np.mean((y_pred - y_test)**2)
-
-def trainOLS(X, y):
-    return LinearRegression().fit(X, y)
-
-def evalsklearn(model, X):
-    return model.predict(X)
-
-def trainRidge(X, y):
-    return Ridge().fit(X, y)
-
-def trainLasso(X, y):
-    return Lasso().fit(X, y)
-
-def trainElasticNet(X, y):
-    return ElasticNet().fit(X, y)
-
-def trainPoisson(X, y):
-    return PoissonRegressor().fit(X, y)
-
-def trainGamma(X, y):
-    return GammaRegressor().fit(X, y)
-
-def trainRandomForest(X, y):
-    return RandomForestRegressor(max_depth=2).fit(X, y)
-
-
-class Mlp(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = nn.Linear(384, 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, 1)
-    
-    def forward(self, x):
-        out = F.relu(self.fc1(x))
-        out = F.relu(self.fc2(out))
-        out = F.relu(self.fc3(out))
-        return out
-        
-def trainMlp(X, y):
-    mlp = Mlp()
-    optimizer = torch.optim.Adam(mlp.parameters(), lr=0.05, weight_decay=1e-5)
-    criterion = nn.MSELoss()
-
-    data = [(X[i], y[i]) for i in range(len(y))]
-    trainloader = torch.utils.data.DataLoader(data, shuffle=True, batch_size=64)
-
-    for epoch in range(4):
-        running_loss = 0
-        for i, data in enumerate(trainloader):
-            inputs, labels = data
-            inputs = torch.tensor(inputs, dtype=torch.float)
-            labels = torch.tensor(labels, dtype=torch.float)
-
-            optimizer.zero_grad()
-            outputs = mlp(inputs).squeeze()
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            running_loss += loss
-            if (i+1) % 500 == 0:
-              print("Samples Trained:", (i+1)*64, "running_loss:", loss.item())
-              running_loss = 0
-
-    return mlp
-
-def evalMLP(mlp, X):
-    pred = mlp(torch.tensor(X)).squeeze().detach().numpy()
-    return pred
-
+def numWordsHist(df):
+    subreddit = df['Subreddit'][0]
+    figure(figsize=(20, 10))
+    plt.hist(df['Title'].map(lambda text : len(text.split(' '))), bins=50, log=False, edgecolor='black', color='green')
+    plt.title(f"Distribution of number of words per post for {subreddit}")
+    plt.show()
 

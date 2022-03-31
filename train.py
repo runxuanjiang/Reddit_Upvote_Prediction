@@ -1,6 +1,7 @@
 import sklearn
 from sklearn import model_selection
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.linear_model import PoissonRegressor, GammaRegressor
 from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import torch
@@ -8,9 +9,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 def crossValidate(X, y, trainfunc, evalfunc, accfunc, folds=10):
+    iteration = 0
     accuracies = []
     kf = model_selection.KFold(n_splits = folds, shuffle=True)
     for train_index, test_index in kf.split(X):
+        iteration += 1
+        print("Cross Validation Iteration:", iteration)
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
@@ -38,8 +42,14 @@ def trainLasso(X, y):
 def trainElasticNet(X, y):
     return ElasticNet().fit(X, y)
 
+def trainPoisson(X, y):
+    return PoissonRegressor().fit(X, y)
+
+def trainGamma(X, y):
+    return GammaRegressor().fit(X, y)
+
 def trainRandomForest(X, y):
-    return RandomForestRegressor().fit(X, y)
+    return RandomForestRegressor(max_depth=2).fit(X, y)
 
 
 class Mlp(torch.nn.Module):
